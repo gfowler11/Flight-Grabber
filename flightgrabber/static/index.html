@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Flight Grabber</title>
+  <meta name="theme-color" content="#1f5eff">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="/icon.svg" alt="" width="28" height="28"> Flight Grabber</div>
+    <span class="tagline">Deep-searches every airport, date and ticket combination for your trip</span>
+  </header>
+
+  <main>
+    <form id="search" class="card search" autocomplete="off">
+      <div class="row trip-type" role="radiogroup" aria-label="Trip type">
+        <label><input type="radio" name="trip" value="round-trip" checked> Round trip</label>
+        <label><input type="radio" name="trip" value="one-way"> One way</label>
+        <label><input type="radio" name="trip" value="multi-city"> Multi-city</label>
+      </div>
+
+      <div id="simple-legs">
+        <div class="row places">
+          <div class="field airport-field" data-role="from">
+            <label for="from">From</label>
+            <input id="from" placeholder="City or airport" required>
+            <div class="suggest" hidden></div>
+            <div class="nearby" hidden></div>
+          </div>
+          <button type="button" id="swap" class="icon-btn" title="Swap" aria-label="Swap origin and destination">⇄</button>
+          <div class="field airport-field" data-role="to">
+            <label for="to">To</label>
+            <input id="to" placeholder="City or airport" required>
+            <div class="suggest" hidden></div>
+            <div class="nearby" hidden></div>
+          </div>
+        </div>
+        <div class="row dates">
+          <div class="field"><label for="depart">Depart</label><input type="date" id="depart" required></div>
+          <div class="field" id="return-field"><label for="return">Return</label><input type="date" id="return"></div>
+        </div>
+      </div>
+
+      <div id="multi-legs" hidden>
+        <div id="multi-list"></div>
+        <button type="button" id="add-leg" class="link-btn">+ Add flight</button>
+      </div>
+
+      <div class="row options">
+        <div class="field">
+          <label>Travellers</label>
+          <button type="button" id="pax-btn" class="select-btn">1 adult</button>
+          <div id="pax-pop" class="popover" hidden>
+            <div class="stepper" data-k="adults"><span>Adults<small>12+</small></span><button type="button">−</button><b>1</b><button type="button">+</button></div>
+            <div class="stepper" data-k="children"><span>Children<small>2–11</small></span><button type="button">−</button><b>0</b><button type="button">+</button></div>
+            <div class="stepper" data-k="infants_in_seat"><span>Infants<small>in seat</small></span><button type="button">−</button><b>0</b><button type="button">+</button></div>
+            <div class="stepper" data-k="infants_on_lap"><span>Infants<small>on lap</small></span><button type="button">−</button><b>0</b><button type="button">+</button></div>
+            <button type="button" class="link-btn" id="pax-done">Done</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="cabin">Cabin</label>
+          <select id="cabin">
+            <option value="economy">Economy</option>
+            <option value="premium-economy">Premium economy</option>
+            <option value="business">Business</option>
+            <option value="first">First</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="stops">Stops</label>
+          <select id="stops">
+            <option value="">Any</option>
+            <option value="0">Nonstop only</option>
+            <option value="1">1 stop or fewer</option>
+            <option value="2">2 stops or fewer</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="bags">Bags</label>
+          <select id="bags">
+            <option value="0,0">No bags</option>
+            <option value="1,0">Carry-on</option>
+            <option value="1,1">Carry-on + 1 checked</option>
+            <option value="1,2">Carry-on + 2 checked</option>
+            <option value="0,1">1 checked</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row deep">
+        <div class="field">
+          <label for="flex">Flexible dates</label>
+          <select id="flex">
+            <option value="0">Exact dates</option>
+            <option value="1" selected>± 1 day</option>
+            <option value="2">± 2 days</option>
+            <option value="3">± 3 days</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="radius">Nearby airports</label>
+          <select id="radius">
+            <option value="0">Off</option>
+            <option value="80">Within 80 km / 50 mi</option>
+            <option value="150" selected>Within 150 km / 95 mi</option>
+            <option value="250">Within 250 km / 155 mi</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="depth">Search depth</label>
+          <select id="depth">
+            <option value="quick">Quick (≈12 searches)</option>
+            <option value="deep" selected>Deep (≈40 searches)</option>
+            <option value="max">Max (≈100 searches)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="provider">Data</label>
+          <select id="provider">
+            <option value="google">Live (Google Flights)</option>
+            <option value="demo">Demo (made-up)</option>
+          </select>
+        </div>
+      </div>
+
+      <details class="advanced">
+        <summary>More options</summary>
+        <div class="row">
+          <div class="field grow">
+            <label for="hour">An hour of travel time is worth <b id="hour-out">$25</b> to me</label>
+            <input type="range" id="hour" min="0" max="150" step="5" value="25">
+            <small class="hint">Used to rank “Best”: higher favours shorter trips, lower favours cheaper ones.</small>
+          </div>
+          <div class="field">
+            <label for="currency">Currency</label>
+            <select id="currency">
+              <option>USD</option><option>EUR</option><option>GBP</option><option>CAD</option><option>AUD</option><option>MXN</option><option>JPY</option>
+            </select>
+          </div>
+          <label class="check"><input type="checkbox" id="no-basic"> Exclude basic economy</label>
+        </div>
+      </details>
+
+      <div class="row submit-row">
+        <button type="submit" class="primary" id="go">Search everything</button>
+        <span id="form-error" class="error" role="alert"></span>
+      </div>
+    </form>
+
+    <section id="results" hidden>
+      <div class="card progress-card" id="progress-card">
+        <div class="progress-text"><span id="progress-msg">Searching…</span><span id="progress-count"></span></div>
+        <div class="bar"><div id="bar-fill"></div></div>
+        <div id="errors" class="errors" hidden></div>
+      </div>
+
+      <div id="insights" class="insights" hidden></div>
+
+      <div class="card" id="grid-card" hidden>
+        <div class="card-head"><h2>Prices by date</h2><button class="link-btn" id="grid-clear" hidden>Show all dates</button></div>
+        <div id="grid" class="grid-wrap"></div>
+        <small class="hint">Cheapest total found for each date. Tap a date to filter.</small>
+      </div>
+
+      <div class="layout">
+        <aside class="card filters" id="filters">
+          <div class="card-head"><h2>Filters</h2><button class="link-btn" id="filters-reset">Reset</button></div>
+          <div class="filter-group"><h3>Stops (per leg)</h3><div id="f-stops"></div></div>
+          <div class="filter-group"><h3>Max price <b id="f-price-out"></b></h3><input type="range" id="f-price"></div>
+          <div class="filter-group"><h3>Max travel time <b id="f-dur-out"></b></h3><input type="range" id="f-dur"></div>
+          <div class="filter-group"><h3>Departure time (first flight)</h3><div id="f-time"></div></div>
+          <div class="filter-group" id="f-ticket-group"><h3>Ticket type</h3><div id="f-ticket"></div></div>
+          <div class="filter-group"><h3>Airports</h3><div id="f-airports"></div></div>
+          <div class="filter-group"><h3>Airlines</h3><div id="f-airlines"></div></div>
+          <label class="check"><input type="checkbox" id="f-nowarn"> Hide options with warnings</label>
+        </aside>
+
+        <div class="list-col">
+          <div class="sort-tabs" role="tablist">
+            <button data-sort="best" class="active" role="tab">Best<span></span></button>
+            <button data-sort="cheapest" role="tab">Cheapest<span></span></button>
+            <button data-sort="fastest" role="tab">Fastest<span></span></button>
+          </div>
+          <button class="link-btn mobile-filters" id="toggle-filters">Filters</button>
+          <div id="count" class="count"></div>
+          <div id="list"></div>
+          <button id="more" class="secondary" hidden>Show more</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Prices come from Google Flights and can change at any moment. Always confirm the final price on the booking site.
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
